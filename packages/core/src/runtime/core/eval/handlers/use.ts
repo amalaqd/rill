@@ -216,7 +216,11 @@ export async function evaluateUseExpr(
       // `use<scheme:resource>` rather than on the capture variable the
       // script picks. Policy matches on this brand, so renaming the
       // variable cannot move a method out from under its rule.
-      brandExtensionValue(result.value, resource);
+      brandExtensionValue(result.value, resource, {
+        location: getNodeLocation(s, node),
+        sourceId: s.ctx.sourceId,
+        fn: 'evaluateUseExpr',
+      });
       return result.value;
     }
 

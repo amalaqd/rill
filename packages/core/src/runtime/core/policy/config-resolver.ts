@@ -54,7 +54,7 @@ import { ERROR_IDS } from '../../../error-registry.js';
  */
 export function resolvePolicy(
   config: PolicyConfig,
-  extensions: Map<string, RillValue>
+  extensions: ReadonlyMap<string, RillValue>
 ): ResolvedPolicy {
   const rules = new Map<string, ReadonlyMap<string, Filter>>();
   const defaults = new Map<string, Filter>();
@@ -114,7 +114,7 @@ function hasTransforms(rule: MethodPolicyRule): boolean {
  */
 function resolveRule(
   rule: MethodPolicyRule,
-  extensions: Map<string, RillValue>
+  extensions: ReadonlyMap<string, RillValue>
 ): Filter {
   return freezeFilter({
     access: rule.access,
@@ -133,7 +133,7 @@ function resolveRule(
  */
 function resolveTransforms(
   refs: readonly string[],
-  extensions: Map<string, RillValue>
+  extensions: ReadonlyMap<string, RillValue>
 ): RillCallable[] {
   return refs.map((ref) => {
     const dotIndex = ref.indexOf('.');

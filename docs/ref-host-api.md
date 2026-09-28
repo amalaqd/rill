@@ -1108,7 +1108,7 @@ interface ResolvedPolicy {
 | `RILL-R087` | A transform reference cannot be resolved to a mounted callable |
 | `RILL-R088` | A call is denied by policy (catchable with `guard` or `??`) |
 | `RILL-R089` | A policy transform re-enters itself |
-| `RILL-R090` | An extension value exceeds the branding budget at `use<>` resolution |
+| `RILL-R090` | An extension value exceeds the branding budget at `use<>` resolution (catchable; the halt means no value binds) |
 
 ---
 

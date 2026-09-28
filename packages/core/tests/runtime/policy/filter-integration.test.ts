@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { parse, execute, createRuntimeContext } from '../../../src/index.js';
+import {
+  parse,
+  execute,
+  createRuntimeContext,
+  RuntimeError,
+  RuntimeHaltSignal,
+} from '../../../src/index.js';
+import { getStatus } from '../../../src/runtime/core/types/status.js';
 import { resolvePolicy } from '../../../src/runtime/core/policy/config-resolver.js';
 import { createConfigFilterResolver } from '../../../src/runtime/core/policy/resolve.js';
 import { extResolver } from '../../../src/runtime/core/resolvers.js';
@@ -670,9 +677,40 @@ describe('filter integration: branding budget', () => {
       kb: wide,
     } as unknown as Record<string, RillValue>);
 
-    await expect(
-      execute(parse('use<ext:kb> => $kb\n$kb.m0()'), ctx)
-    ).rejects.toMatchObject({ errorId: 'RILL-R090' });
+    await expectHalt(
+      () => execute(parse('use<ext:kb> => $kb\n$kb.m0()'), ctx),
+      {
+        code: 'RILL_R090',
+        messagePattern: /exceeds 10000 members/,
+      }
+    );
+  });
+
+  it('locates the use<> that blew the budget', async () => {
+    const wide: Record<string, RillValue> = {};
+    for (let i = 0; i < 10_001; i++) {
+      wide[`m${i}`] = method('ok');
+    }
+
+    const ctx = createTestContext({ kb: { '*': { access: 'deny' } } }, {
+      kb: wide,
+    } as unknown as Record<string, RillValue>);
+
+    // Every sibling failure in evaluateUseExpr carries the import's
+    // location. A host cannot act on "some extension is too large".
+    let caught: unknown;
+    try {
+      await execute(parse('log("first")\nuse<ext:kb> => $kb'), ctx);
+    } catch (e) {
+      caught = e;
+    }
+    const invalid =
+      caught instanceof RuntimeHaltSignal
+        ? caught.value
+        : (caught as RuntimeError).haltValue!;
+    const frame = getStatus(invalid).trace[0];
+    // The use<> is on line 2, not line 1.
+    expect(frame?.site).toMatch(/:2:\d+$/);
   });
 
   it('brands a deeply nested member the old depth bound would have skipped', async () => {

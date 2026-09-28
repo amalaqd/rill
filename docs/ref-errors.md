@@ -15,7 +15,7 @@ This document catalogs all error conditions in rill with descriptions, common ca
 
 - [Lexer Errors (RILL-L001 - RILL-L005)](#lexer-errors)
 - [Parse Errors (RILL-P001 - RILL-P023)](#parse-errors)
-- [Runtime Errors (RILL-R001 - RILL-R089)](#runtime-errors)
+- [Runtime Errors (RILL-R001 - RILL-R090)](#runtime-errors)
 - [Check Errors (RILL-C001 - RILL-C004)](#check-errors)
 
 ---
@@ -2025,6 +2025,23 @@ $r.! ? "not permitted" ! $r
 ```text
 # Transform that must not call back into its own method
 # policy: { "kb": { "search": { "access": "allow", "out": ["filter.redact"] } } }
+```
+
+---
+
+### rill-r090
+
+**Description:** Extension too large to brand for policy
+
+**Cause:** A use<scheme:resource> resolver returned a value with more members than the policy walk will visit. Branding every callable is what makes policy rules match, so a partial walk would leave the remainder silently unpoliced.
+
+**Resolution:** Return a smaller extension value from the resolver, or split the extension across several resources that are resolved separately.
+
+**Example:**
+
+```text
+# Resolver returning an extension of ordinary size
+# Host code: registerResolver("ext", () => ({ kind: "value", value: kb }))
 ```
 
 ---

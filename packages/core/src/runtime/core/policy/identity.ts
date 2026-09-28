@@ -15,10 +15,11 @@
  * forged, or rewritten by host functions, which never see this module.
  */
 
-import { RuntimeError } from '../../../types.js';
-import { ERROR_IDS } from '../../../error-registry.js';
+import { ERROR_IDS, ERROR_ATOMS } from '../../../error-registry.js';
 import { isCallable } from '../callable.js';
 import type { RillCallable } from '../callable.js';
+import { throwCatchableHostHalt } from '../types/halt.js';
+import type { TypeHaltSite } from '../types/halt.js';
 import { isDict, isTuple, isOrdered } from '../types/guards.js';
 import type { RillValue } from '../types/structures.js';
 import type { ExtensionIdentity } from './types.js';
@@ -63,11 +64,19 @@ const MAX_BRAND_MEMBERS = 10_000;
  * share callable instances, and letting a later mount silently re-home
  * one would make the effective policy depend on resolution order.
  *
- * @throws RuntimeError (RILL-R090) if the value exceeds
- *   {@link MAX_BRAND_MEMBERS}. Fatal rather than partial: leaving the
- *   remainder unbranded would silently exempt it from policy.
+ * @param site - Halt site of the `use<>` that resolved this value, so a
+ *   budget overrun names the import that blew it
+ * @throws RILL-R090 (catchable) if the value exceeds
+ *   {@link MAX_BRAND_MEMBERS}. Halts rather than branding part of the
+ *   tree: leaving the remainder unbranded would silently exempt it from
+ *   policy. Catchable to match every other `use<>` failure, and safe to
+ *   catch because the halt means no value binds.
  */
-export function brandExtensionValue(value: RillValue, resource: string): void {
+export function brandExtensionValue(
+  value: RillValue,
+  resource: string,
+  site: TypeHaltSite
+): void {
   const segments = resource.split('.').filter((s) => s.length > 0);
   const extension = segments[0];
   if (extension === undefined) return;
@@ -84,9 +93,11 @@ export function brandExtensionValue(value: RillValue, resource: string): void {
     if (entry === undefined) break;
 
     if (++visited > MAX_BRAND_MEMBERS) {
-      throw new RuntimeError(
-        ERROR_IDS.RILL_R090,
-        `Extension '${resource}' exceeds ${MAX_BRAND_MEMBERS} members and cannot be branded for policy`
+      throwCatchableHostHalt(
+        site,
+        ERROR_ATOMS[ERROR_IDS.RILL_R090],
+        `Extension '${resource}' exceeds ${MAX_BRAND_MEMBERS} members and cannot be branded for policy`,
+        { resource, limit: MAX_BRAND_MEMBERS }
       );
     }
 
