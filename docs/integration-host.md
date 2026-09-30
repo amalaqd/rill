@@ -377,6 +377,8 @@ Rules key on where a callable was resolved from, not on the path the script writ
 
 `in` rewrites the method's **first argument** before it executes; `out` rewrites the return value after. Both are lists, applied in order, each transform receiving the previous one's output.
 
+Declare the parameter that needs sanitizing first. `in` never sees later arguments, so a sensitive value in the second position reaches the method untransformed.
+
 `in` is not restricted to piped calls. `$kb.search("q")` is sanitized the same as `"q" -> $kb.search()`, because keying on the pipe would make dropping it a one-edit bypass. A zero-argument call has no first argument and is left alone; synthesizing one would change the call's arity.
 
 Transforms are dispatched internally, so a transform is not itself filtered on the way in. A transform that re-enters itself, directly or through a policed method whose own chain reaches back, halts with `RILL-R089`.
